@@ -47,9 +47,9 @@ loc      dw        ?                             ;
 ;-------------------------------------------------
 nextval:                                         ;
          push      ax                            ; Save ax register on the stack
-         push      dx                            ; Save dx register on the stack
-         push      bx                            ; Save the dx register on stack
+         push      dx                            ; Save dx register on the stack         
          push      si                            ; Save the si register on stack
+         push      bx                            ; Save the dx register on stack
                                                  ;
 ;-------------------------------------------------
 ; Code to calculate linear location of mouse in maze (0 to 449)
@@ -121,6 +121,7 @@ move:
          div       [cols]                        ; Divide ax by the number of columns
          inc       ah                            ; increment the ah register (holds the column index)
          inc       al                            ; increment the al register (holds the row index)
+         pop       si                            ; Restore the si register
          mov       [si], ah                      ; Store the remainder in [si] which is column index
          mov       [di], al                      ; Store the quotient in [di] which is row index
 
