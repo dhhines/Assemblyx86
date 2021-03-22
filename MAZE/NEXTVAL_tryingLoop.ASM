@@ -38,10 +38,8 @@ dirtbl   dw        n0, e1, s2, w3                ; Jump table for direction at b
                                                  ; ... using dirtbl offset into dataseg
                                                  ; ... plus bx register minus 1
                                                  ; ... will jump to label of loop with North at top
-mvtbl    dw        -30, 1, 30, -1
 loc      dw        ?                             ;
-nloc     dw        ?
-;datatbl  dw        15,30,0,0,0,0                ; datatbl for holding rows, cols, x, y, loc, and dir
+;datatbl  dw        15,30,0,0,0,0                 ; datatbl for holding rows, cols, x, y, loc, and dir
 ;-------------------------------------------------
          .code                                   ;start the code segment
 ;-------------------------------------------------
@@ -75,12 +73,12 @@ nextval:                                         ;
          add       al, al
          cbw
          mov       si, ax
-         jmp       [dirtbl + si - 2]             ; Jump to the table reference to left of current direction    <--- NOTE:  I should always try West first!  I think???
-         ;jmp w3                                  ; .... East -> check North (0), South -> check East(1)
-                                                 ; .... West -> check South (2), North -> check We1(3)
+         jmp       [dirtbl + si - 2]             ; Jump to the table reference to left of current direction
+                                                 ; .... East -> check North (0), South -> check East(1)
+                                                 ; .... We1 -> check South (2), North -> check We1(3)
                                                  ;
 n0:                                              ; Label for direction to check is north (table index 0)
-         mov       si, [loc]                     ; Place the current index value for mouse location in si (0-449)  <--- NOTE:  If I always start West then I can use my mbtbl to add always!
+         mov       si, [loc]                     ; Place the current index value for mouse location in si (0-449)
          sub       si, 30                        ; Subtract # columns to get value at row above (north)
          mov       al, ds:[bp + si]              ; Move the value in the bp maze table at si index into al
          cmp       al, 20h                       ; compare byte of target move location to 20h (space)
@@ -120,9 +118,8 @@ w3:                                              ; Label for direction to check 
 
 move:
          mov       dl, [dir]
-         mov       [nloc], si
          mov       [bx], dl                      ; Move the value of direction into the bx register pointer
-         mov       ax, [nloc]                     ; Move the linear location value into ax for finding x and y values
+         mov       ax, [loc]                     ; Move the linear location value into ax for finding x and y values
          div       [cols]                        ; Divide ax by the number of columns
          inc       ah                            ; increment the ah register (holds the column index)
          inc       al                            ; increment the al register (holds the row index)
