@@ -29,10 +29,10 @@
 ;-------------------------------------------------
          .data                                   ;start the data segment
 ;-------------------------------------------------
-rows     db        15                            ; Maze rows constant
-cols     db        30                            ; Maze columns constant
-x        db        ?                             ; converted x coordinate
-y        db        ?                             ; converted y coordiante
+rows     dw        15                            ; Maze rows constant
+cols     dw        30                            ; Maze columns constant
+x        dw        ?                             ; converted x coordinate
+y        dw        ?                             ; converted y coordiante
 dir      db        ?                             ; Holds current direction of bx at start of subroutine
 dirtbl   dw        nth, est, sth, wst            ; Jump table for direction at bx pointer
                                                  ; ... using dirtbl offset into dataseg
@@ -48,17 +48,19 @@ nextval:                                         ;
          push      ax                            ; Save ax register on the stack
          push      dx                            ; Save dx register on the stack
          push      bx                            ; Save the dx register on the stack
+         push      si                            ; Save the si register on stack
+         push      di                            ; Save the di register on stack
                                                  ;
 ;-------------------------------------------------
 ; Code to calculate linear location of mouse in maze (0 to 449)
 ;-------------------------------------------------
-         mov       dl, [si]
-         mov       dh, [di]
-         dec       dl
-         dec       dh
-         mov       [x], dl
-         mov       [y], dh
-         mov       al, [cols]                    ; Move the number of elements per row into al register
+         mov       ax, [si]
+         mov       dx, [di]
+         dec       ax
+         dec       dx
+         mov       [x], ax
+         mov       [y], dx
+         mov       ax, [cols]                    ; Move the number of elements per row into al register
          mul       [y]                           ; Multiply by the row value now stored in [y] variable
          add       ax, [x]                       ; Add the column value now stored in [x] variable
                                                  ; .... ax register now holds the linear offset of mouse in maze (0-449)
@@ -112,7 +114,8 @@ wst:                                             ; Label for direction to check 
 
 move:
          pop       bx                            ; restore bx register from the stack to original value
-         mov       [bx], [dir]                   ; Move the value of direction into the bx register pointer
+         mov       dl, [dir]
+         mov       [bx], dl                      ; Move the value of direction into the bx register pointer
          mov       ax, [loc]                     ; Move the linear location value into ax for finding x and y values
          div       [cols]                        ; Divide ax by the number of columns
          inc       ah                            ; increment the ah register (holds the column index)
