@@ -38,7 +38,7 @@ dirtbl   dw        nth, est, sth, wst            ; Jump table for direction at b
                                                  ; ... using dirtbl offset into dataseg
                                                  ; ... plus bx register minus 1
                                                  ; ... will jump to label of loop with North at top
-loc      dw        0                             ; Location data word for storing linear address of mouse in maze (0 - 449)
+datatbl  dw        15,30,0,0,0,0                 ; datatbl for holding rows, cols, x, y, loc, and dir
 ;-------------------------------------------------
          .code                                   ;start the code segment
 ;-------------------------------------------------
@@ -47,7 +47,7 @@ loc      dw        0                             ; Location data word for storin
 nextval:                                         ;
          push      ax                            ; Save ax register on the stack
          push      dx                            ; Save dx register on the stack
-         push      bx                            ; Save the dx register on the stack
+         push      bx                            ; Save the dx register on stack
          push      si                            ; Save the si register on stack
          push      di                            ; Save the di register on stack
                                                  ;
@@ -74,8 +74,8 @@ nextval:                                         ;
                                                  ; .... West -> check South (2), North -> check West(3)
                                                  ;
 nth:                                             ; Label for direction to check is north (table index 0)
-         mov       bx, [loc]                     ; Place the current index value for mouse location in bx (0-449)
-         sub       bx, [cols]                    ; Subtract # columns to get value at row above (north)
+         mov       si, [loc]                     ; Place the current index value for mouse location in si (0-449)
+         sub       si, [cols]                    ; Subtract # columns to get value at row above (north)
          mov       al, ds:[bp + bx]              ; Move the value in the bp maze table at bx index into al
          cmp       al, 20h                       ; compare byte of target move location to 20h (space)
          mov       [dir], 4
