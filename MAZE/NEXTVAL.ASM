@@ -34,11 +34,11 @@ cols     db        30                            ; Maze columns constant
 x        dw        ?                             ; converted x coordinate
 y        db        ?                             ; converted y coordiante
 dir      db        ?                             ; Holds current direction of bx at start of subroutine
-dirtbl   dw        nth, est, sth, wst            ; Jump table for direction at bx pointer
+dirtbl   db        n, e, s, w                    ; Jump table for direction at bx pointer
                                                  ; ... using dirtbl offset into dataseg
                                                  ; ... plus bx register minus 1
                                                  ; ... will jump to label of loop with North at top
-loc      dw        ?                             ; 
+loc      dw        ?                             ;
 ;datatbl  dw        15,30,0,0,0,0                 ; datatbl for holding rows, cols, x, y, loc, and dir
 ;-------------------------------------------------
          .code                                   ;start the code segment
@@ -47,9 +47,8 @@ loc      dw        ?                             ;
 ;-------------------------------------------------
 nextval:                                         ;
          push      ax                            ; Save ax register on the stack
-         push      dx                            ; Save dx register on the stack         
+         push      dx                            ; Save dx register on the stack
          push      si                            ; Save the si register on stack
-         push      bx                            ; Save the dx register on stack
                                                  ;
 ;-------------------------------------------------
 ; Code to calculate linear location of mouse in maze (0 to 449)
@@ -74,16 +73,16 @@ nextval:                                         ;
                                                  ; .... East -> check North (0), South -> check East(1)
                                                  ; .... West -> check South (2), North -> check West(3)
                                                  ;
-nth:                                             ; Label for direction to check is north (table index 0)
+n:                                               ; Label for direction to check is north (table index 0)
          mov       si, [loc]                     ; Place the current index value for mouse location in si (0-449)
          sub       si, 30                        ; Subtract # columns to get value at row above (north)
          mov       al, ds:[bp + si]              ; Move the value in the bp maze table at si index into al
          cmp       al, 20h                       ; compare byte of target move location to 20h (space)
-         mov       [dir], 4                      ; Store the direction if moving north 
+         mov       [dir], 4                      ; Store the direction if moving north
          je        move                          ; If equal to 20h then jump to move label to move the mouse
                                                  ; .... otherwise drop through to the next direction check
                                                  ;
-est:                                             ; Label for direction to check is east (table index 1)
+e:                                               ; Label for direction to check is east (table index 1)
          mov       si, [loc]                     ; Place the current index value for mouse location in bx
          add       si, 1                         ; Add 1 to index in bx to get value of space to east
          mov       al, ds:[bp + si]              ; Move the value in the bp maze table at bx index into al
@@ -92,7 +91,7 @@ est:                                             ; Label for direction to check 
          je        move                          ; If equal to 20h then jump to move label to move the mouse
                                                  ; .... otherwise drop through to the next direction check
                                                  ;
-sth:                                             ; Label for direction to check is south (table index 2)
+s:                                               ; Label for direction to check is south (table index 2)
          mov       si, [loc]                     ; Place the current index value for mouse location in bx
          add       si, 30                        ; Add # columns to bx to get value at row below (south)
          mov       al, ds:[bp + si]              ; Move the value in the bp maze table at bx index into al
@@ -101,7 +100,7 @@ sth:                                             ; Label for direction to check 
          je        move                          ; If equal to 20h then jump to move label to move the mouse
                                                  ; .... otherwise drop through to the next direction check
                                                  ;
-wst:                                             ; Label for direction to check is west (table index 3)
+w:                                               ; Label for direction to check is west (table index 3)
          mov       si, [loc]                     ; Place the current index value for mouse location in bx
          cmp       [x], 0                        ; Compare [x] value to 0
          je        nth                           ; If [x] and 0 are equal then jump to the next check which is North
@@ -114,7 +113,6 @@ wst:                                             ; Label for direction to check 
          jmp nth                                 ; Jump to the top if have not yet checked all directions and/or moved
 
 move:
-         pop       bx                            ; restore bx register from the stack to original value
          mov       dl, [dir]
          mov       [bx], dl                      ; Move the value of direction into the bx register pointer
          mov       ax, [loc]                     ; Move the linear location value into ax for finding x and y values
@@ -133,6 +131,7 @@ move:
 ; Restore registers and return
 ;-------------------------------------------------
 exit:                                            ;
+         pop       dx                            ; restore dx register from the stack
          pop       ax                            ; restore ax register from the stack
          ret                                     ; return
 ;-------------------------------------------------
