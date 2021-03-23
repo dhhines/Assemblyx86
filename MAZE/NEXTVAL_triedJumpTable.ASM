@@ -32,6 +32,8 @@
 cols     db        30                            ; Number of columns per row
 mvtbl    dw        -30,1,30,-1,-30,1,30,-1       ; Values to calculating the next move in liner
 newdir   dw        4,1,2,3,4,1,2,3               ; Table with new direction based on the mvtbl index
+jmptbl   dw        n0, e1, s2, w3                ; Jump table that starts with left mouse check
+movval   dw        ?                             ; Value to update the SI index
 ;-------------------------------------------------
          .code                                   ;start the code segment
 ;-------------------------------------------------
@@ -52,34 +54,59 @@ nextval:                                         ;
          add       ax, cx                        ; Add the column value now stored in cx data word
                                                  ; .... ax register now holds the linear offset of mouse in maze (0-449)
          sub       ax, 31                        ; subtract 31 to get the 0 indexed linear offset of mouse
+         mov       si, ax
 ;-------------------------------------------------
 ; Setup BX for direction indexing
 ;-------------------------------------------------
          mov       bl, [bx]                      ; Move the direction value from bx location into the bl register
          add       bl, bl                        ; Double the size of the direction index for word size values
          mov       bh, 0                         ; Move 0 into bh so only bl value remains for indexing
+         jmp       [jmptbl + bx - 2]
 ;-------------------------------------------------
 ; Loop checking left mouse algorithm for ability to move
 ;-------------------------------------------------
-loopstrt:
-         mov       si, ax                        ; Move the linear maze location into si for checking next possible move
-         add       si, [mvtbl + bx - 2]          ; Use the mvtbl w/ bx-2 index to add/sub rows or cols to location
-         add       bx, 2                         ; Increment bx index value by 2 to turn the mouse for next check
-         cmp       byte ptr ds:[bp + si], 20h    ; compare byte of target move location to 20h (space)
-         jne       loopstrt                      ; If not equal to space then start back at top of loop
-;-------------------------------------------------
-; Code to set the new direction of move
-;-------------------------------------------------
-         mov       cx, [newdir + bx - 4]         ; Use the newdir w/ bx-4 index to save new direction being checked in cx
-         pop       bx                            ; Restore the bx register from the stack
-         mov       [bx], cl                      ; Move the value of direction from cl register into the bx pointer location
+;loopstrt:
+         ;mov       si, ax                        ; Move the linear maze location into si for checking next possible move
+         ;add       si, [mvtbl + bx - 2]          ; Use the mvtbl w/ bx-2 index to add/sub rows or cols to location
+         ;mov        cx,
+         ;add       bx, 2                         ; Increment bx index value by 2 to turn the mouse for next check
+         ;cmp       byte ptr ds:[bp + si], 20h    ; compare byte of target move location to 20h (space)
+         ;jne       loopstrt                      ; If not equal to space then start back at top of loop
+n0:
+         cmp       byte ptr ds:[bp+si-30], 20h   ; compare the maze byte at -30 from curr position to 20h
+         mov       bx, -30                       ; store -30 in bx in case match
+         mov       cl, 4                         ; store tested direction
+         je        move                          ; If a space is matched for move then jump to move code
+e1:
+         cmp       byte ptr ds:[bp+si+1], 20h    ; compare the maze byte at +1 from curr position to 20h
+         mov       bx, 1                         ; store +1 in bx in case match
+         mov       cl, 1                         ; store tested direction
+         je        move                          ; If a space is matched for move then jump to move code
+s2:
+         cmp       byte ptr ds:[bp+si+30], 20h   ; compare the maze byte at +30 from curr position to 20h
+         mov       bx, 30                        ; store +30 in bx in case match
+         mov       cl, 2                         ; store tested direction
+         je        move                          ; If a space is matched for move then jump to move code
+w3:
+         cmp       byte ptr ds:[bp+si-1], 20h    ; compare the maze byte at -1 from curr position to 20h
+         mov       bx, -1                        ; store -1 in bx in case match
+         mov       cl, 3                         ; store teste direction
+         je        move                          ; If a space is matched for move then jump to move code
+         jmp       n0                            ; If no match yet then start at the top and drop through
 ;-------------------------------------------------
 ; Code to update the x and y values to proper values
 ;-------------------------------------------------
-         mov       ax, si                        ; Move the linear location value into ax for finding x and y values
+move:
+         add       ax, bx                        ; Move the linear location value into ax for finding x and y values
          div       [cols]                        ; Divide ax by the number of columns
          add       ah, 1                         ; increment the resulting column index
          add       al, 1                         ; increment the resulting row index
+;-------------------------------------------------
+; Code to set the new direction of move
+;-------------------------------------------------
+         ;mov       cx, [newdir + bx - 4]         ; Use the newdir w/ bx-4 index to save new direction being checked in cx
+         pop       bx                            ; Restore the bx register from the stack
+         mov       [bx], cl                      ; Move the value of direction from cl register into the bx pointer location
 ;-------------------------------------------------
 ; Code to update the [si] and [di] location values
 ;-------------------------------------------------
