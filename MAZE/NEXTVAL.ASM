@@ -39,8 +39,8 @@ newdir   dw        4,1,2,3,4,1,2,3               ; Table with new direction base
 ;-------------------------------------------------
 nextval:                                         ;
          push      ax                            ; Save ax register on the stack
-         push      cx                            ; Save cx register on the stack
-         push      si                            ; Save the si register on stack
+         push      cx                            ; Save cx register on the stack                             02 A3 D3 2A 03 9A D5 F1
+         push      si                            ; Save the si register on stack                             03 9A D5 F1
          push      bx                            ; Save the bx register on stack
 ;-------------------------------------------------
 ; Code to calculate linear location of mouse in maze (0 to 449)
