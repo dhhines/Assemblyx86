@@ -6,12 +6,13 @@
 ;
 ;                Add your additional functional comments
 ;
-;  Owner:
+;  Owner:        David Hiens
 ;
 ;  Changes:
 ;  Date          Reason
 ;  ----          ------
 ;  05/16/2017    Original version ... coded to spec design
+;  04/04/2021    Updated version with student specific code
 ;---------------------------------------------------------------------
          .model    small
          .8086
@@ -19,7 +20,8 @@
 ;---------------------------------------
          .data                         ;start the data segment
 ;---------------------------------------
-                                       ;no variables declared
+;mask     dw        61455               ;mask for high / low 4-bits in RLC bytes
+;clrs     dw        56096               ;colors black and white stored as word
 ;---------------------------------------
          .code                         ;start the code segnment
 ;---------------------------------------
@@ -37,41 +39,44 @@ _rlc:                                  ;
 ; Start of RLC code preparing registers and flags
 ;---------------------------------------
          mov       cx,0                ;set cx to 0 to prepare for loading later
-         mov       ax,0                ;clear the ax register
+         mov       bl,0Fh              ;mask bytes stored in bl register
          cld                           ;clear direction flag for string ops
-         mov       bx,F00Fh            ;mask bytes stored in bx register
-                                       ;.... bh gets high bits, bl gets low bits
-
 ;---------------------------------------
 ; reset for processing a new line of 80 pels
 ;---------------------------------------
 reset:                                 ;used to reset for new line processing
-         cmp       [si],0              ;compare the byte value at [si] to zero
-         je        exit                ;if zero for byte then jump to end as at end of buffer
          mov       dx,80               ;set dx with line count value of 80
-         mov       ax,DB20h            ;move the DBh and 20h values into ax register
+                                       ;.... bh gets high bits, bl gets low bits
+         mov       ax,0DB20h           ;move the DBh and 20h values into ax register
                                        ;.... will always use al for string cpy
                                        ;.... use exch al,ah to change color value in al
 ;---------------------------------------
 ; Get the 4-bit RLC values for processing
 ;---------------------------------------
-getRLC:                                ;label for getting next two RLC values
-         mov       cl,bh               ;move the mask in bh for RLC 4-bits into cl
-         and       cl,[si]             ;and with [si] to get high 4-bit value into cl
-         exch      bl,bh               ;exchange values in bl and bh for next mask operation
+getRLC:
+         cmp       byte ptr [si],0     ;compare the byte value at [si] to zero
+         je        exit                ;if zero for byte then jump to end as at end of buffer                               ;label for getting next two RLC values
+         mov       cl,4                ;move 4 into cl to prep right bit rotate of 4
+         ror       byte ptr [si],cl    ;right rotate bits in [si] 4 bit locations
+         mov       cl,bl               ;move the mask in bl for RLC 4-bits into cl
+         and       cl,[si]             ;and with [si] to get 4-bit RLC value into cl
 
 valtst:
+         cmp       cl,0                ;compare cl value to 0
+         je        skip                ;jump to skip code section if cl == 0
          cmp       cl,0Fh              ;compare cl to 0Fh to see if need to fill line
          jne       decomp              ;if not equal to 15 (1111 4-bit) then jump to decomp
-         mov       cx,dx               ;else move remaining count for line into cx
+         mov       cx,dx               ;else move remaining count for line into cl
 
 decomp:
-         sub       dx,cx               ;subtract cx value from dx to track line pels to be copied to di
-         rep       stosb               ;move cx number of color into destination buffer
-         cmp       dx,0                ;check if dx is 0, all pels for line completed
+         sub       dx,cx               ;subtract cx value from dx to track line pels copied to di
+         rep       stosb               ;move cx number of color into destination buffer from al
+         cmp       dx,0                ;check if dx is 0 then all pels for line completed
          je        reset               ;.... if done for line (80 pels) then jump to reset label
-         exch      al,ah               ;else exchange colors stored in ax to process next code
-         cmp       bh,0Fh              ;compare mask in bh to 0Fh, determine next op
+
+skip:
+         xchg      al,ah               ;else exchange colors stored in ax to process next code
+         cmp       al,0DBh             ;compare clr in al to DBh, determines next op
          je        getRLC              ;if equal, jump back to getRLC for next code processing
          inc       si                  ;else increment si to get next RLC byte for processing
          jmp       getRLC              ;then jump to getRLC label
