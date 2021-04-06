@@ -4,9 +4,13 @@
 ;  Function:     Decompresses 1 dimensional run lengths
 ;                This subroutine links with a C main program
 ;
-;                Add your additional functional comments
+;                Focused on using XOR, ROR and XCHG to minimize the
+;                movement of data around between memory and registers.
+;                Used rotate right and bitwise masks to isolate the 4-bit
+;                rlc codes without destorying the data at the [SI] byte
+;                location.
 ;
-;  Owner:        David Hiens
+;  Owner:        David Hines
 ;
 ;  Changes:
 ;  Date          Reason
@@ -38,8 +42,10 @@ _rlc:                                  ;
 ;---------------------------------------
 ; Start of RLC code preparing registers and flags
 ;---------------------------------------
-         mov       cx,0                ;set cx to 0 to prepare for loading later
-         mov       bl,0Fh              ;mask bytes stored in bl register
+         push      ds                  ;push the data segment address value to stack
+         pop       es                  ;pop the value from the stack into extra segment register
+         mov       bx,0100h            ;for tracking codes processed per byte
+         mov       cx,0                ;clear cx register for use
          cld                           ;clear direction flag for string ops
 ;---------------------------------------
 ; reset for processing a new line of 80 pels
@@ -55,32 +61,41 @@ reset:                                 ;used to reset for new line processing
 ;---------------------------------------
 getRLC:
          cmp       byte ptr [si],0     ;compare the byte value at [si] to zero
-         je        exit                ;if zero for byte then jump to end as at end of buffer                               ;label for getting next two RLC values
+         je        exit                ;if zero for byte then jump to end as at end of buffer
          mov       cl,4                ;move 4 into cl to prep right bit rotate of 4
          ror       byte ptr [si],cl    ;right rotate bits in [si] 4 bit locations
-         mov       cl,bl               ;move the mask in bl for RLC 4-bits into cl
+         mov       cl,0Fh              ;move the mask in bl for RLC 4-bits into cl
          and       cl,[si]             ;and with [si] to get 4-bit RLC value into cl
-
+         je        pstdcmp             ;jump to postdcmp label if cl == 0
+;---------------------------------------
+; test the value in cl for line fill (0Fh)
+;---------------------------------------
 valtst:
-         cmp       cl,0                ;compare cl value to 0
-         je        skip                ;jump to skip code section if cl == 0
          cmp       cl,0Fh              ;compare cl to 0Fh to see if need to fill line
          jne       decomp              ;if not equal to 15 (1111 4-bit) then jump to decomp
          mov       cx,dx               ;else move remaining count for line into cl
-
+;---------------------------------------
+; decompression of the current run
+;---------------------------------------
 decomp:
          sub       dx,cx               ;subtract cx value from dx to track line pels copied to di
-         rep       stosb               ;move cx number of color into destination buffer from al
+         rep       stosb               ;decompress bytes by number in cl using value in al for color
+;---------------------------------------
+; setup for the next run processing
+;---------------------------------------
+pstdcmp:
+         xchg      al,ah               ;exchange colors stored in ax to process next code
+         xor       bl,bh               ;set next 4-bit code to be processed
+                                       ;.... 0=incr SI to next byte, 1=get next RLC in byte
+         jne       chkline             ;if zf=0, jump to chkline label
+         inc       si                  ;else increment si to get next RLC byte for processing
+;---------------------------------------
+; check if hit end of line and reset for new line
+;---------------------------------------
+chkline:
          cmp       dx,0                ;check if dx is 0 then all pels for line completed
          je        reset               ;.... if done for line (80 pels) then jump to reset label
-
-skip:
-         xchg      al,ah               ;else exchange colors stored in ax to process next code
-         cmp       al,0DBh             ;compare clr in al to DBh, determines next op
-         je        getRLC              ;if equal, jump back to getRLC for next code processing
-         inc       si                  ;else increment si to get next RLC byte for processing
-         jmp       getRLC              ;then jump to getRLC label
-
+         jmp       getRLC              ;start back at the top to process next RLC
 ;---------------------------------------
 ; Restore registers and return
 ;---------------------------------------
@@ -91,5 +106,4 @@ exit:                                  ;
          ret                           ;return
 ;---------------------------------------
          end
-
 
